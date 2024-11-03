@@ -1,52 +1,89 @@
+[![Build Status](https://github.com/emoon/rust_minifb/workflows/CI/badge.svg)](https://github.com/emoon/rust_minifb/actions?workflow=CI)
+[![Crates.io](https://img.shields.io/crates/v/minifb.svg)](https://crates.io/crates/minifb)
+[![Documentation](https://docs.rs/minifb/badge.svg)](https://docs.rs/minifb)
 
-This text is based on the C version of the lib. This text will be updated soon...
+minifb is a cross platform library written in [Rust](https://www.rust-lang.org) and that makes it easy to setup a window and to (optional) display a 32-bit pixel buffer.  It also makes it easy to get input from keyboard and mouse. Notice that minifb is primary designed for prototyping and may not include all the features found in full window handling libraries.
+An example is the best way to show how it works:
 
+[Changelog](https://github.com/emoon/rust_minifb/blob/master/CHANGELOG.md)
 
-MinFB
-======
+Usage
+-----
 
-MiniFB (Mini FrameBuffer) is a small cross platform library that makes it easy to render (32-bit) pixels in a window. An example is the best way to show how it works:
+```toml
+# Cargo.toml
+[dependencies]
+minifb = "0.27"
+```
 
-	if (!mfb_open("my display", 800, 600))
-		return 0;
+Example
+-------
 
-	for (;;)
-	{
-		int state;
+```rust
+use minifb::{Key, Window, WindowOptions};
 
-		// TODO: add some fancy rendering to the buffer of size 800 * 600
+const WIDTH: usize = 640;
+const HEIGHT: usize = 360;
 
-		state = mfb_update(buffer);
+fn main() {
+    let mut buffer: Vec<u32> = vec![0; WIDTH * HEIGHT];
 
-		if (state < 0)
-			break;
-	}
+    let mut window = Window::new(
+        "Test - ESC to exit",
+        WIDTH,
+        HEIGHT,
+        WindowOptions::default(),
+    )
+    .unwrap_or_else(|e| {
+        panic!("{}", e);
+    });
 
-	mfb_close();
+    // Limit to max ~60 fps update rate
+    window.set_target_fps(60);
 
+    while window.is_open() && !window.is_key_down(Key::Escape) {
+        for i in buffer.iter_mut() {
+            *i = 0; // write something more funny here!
+        }
 
-First the code creates window with the mfb_open call that is used to display the data, next it's the applications resposiblity to allocate a buffer (which has to be at least the size of the window and in 32-bit) Next when calling mfb_update function the buffer will be copied over to the window and displayed. Currently the mfb_update will return -1 if ESC key is pressed but later on it will support to return a key code for a pressed button. See https://github.com/emoon/minifb/blob/master/tests/noise.c for a complete example
+        // We unwrap here as we want this code to exit if it fails. Real applications may want to handle this in a different way
+        window
+            .update_with_buffer(&buffer, WIDTH, HEIGHT)
+            .unwrap();
+    }
+}
+```
 
-MiniFB has been tested on Windows, Mac OS X and Linux but may of course have trouble depending on your setup. Currently the code will not do any converting of data if not a proper 32-bit display can be created.
+Status
+------
+Currently macOS, Linux and Windows (64-bit and 32-bit) are the current supported platforms. X11 (Linux/FreeBSD/etc) support has been tested on Ubuntu (x64). Linux Wayland support is also available. Bug report(s) for other OSes/CPUs are welcome!
+Notice: That after 0.13 Redox hasn't been updated and some work is required to get that working again. PR are welcome.
 
 Build instructions
 ------------------
 
-MiniFB uses tundra https://github.com/deplinenoise/tundra as build system and is required to build the code as is but not many changes should be needed if you want to use it directly in your own code.
+On Linux you may need to install these dependencies first:
 
-Mac
----
+```
+sudo apt install libxkbcommon-dev libwayland-cursor0 libwayland-dev
+```
 
-Cocoa and clang is assumed to be installed on the system (downloading latest XCode + installing the command line tools should do the trick) then to build run: tundra2 macosx-clang-debug and you should be able to run the noise example (t2-output/macosx-clang-debug-default/noise)
+```
+cargo build
+cargo run --example noise
+```
 
-Windows
--------
+This will run the [noise example](https://github.com/emoon/rust_minifb/blob/master/examples/noise.rs)
 
-Visual Studio (ver 2012 express has been tested) tools needed (using the vcvars32.bat (for 32-bit) will set up the enviroment) to build run: tundra2 win32-msvc-debug and you should be able to run noise in t2-output/win32-msvc-debug-default/noise.exe
+## License
 
+Licensed under either of
 
-x11 (FreeBSD, Linux, *nix)
---------------------------
+ * Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+ * MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
 
-gcc and x11-dev libs needs to be installed. To build the code run tundra2 x11-gcc-debug and you should be able to run t2-output/x11-gcc-debug-default/noise
+at your option.
 
+### Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
